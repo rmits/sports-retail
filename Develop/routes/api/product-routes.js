@@ -1,51 +1,80 @@
 const router = require('express').Router();
 const { Product, Category, Tag, ProductTag } = require('../../models');
+Product.belongsTo(Category, {foreignKey: 'category_id'});
+Product.belongsToMany(Tag, {through: ProductTag});
 
 // The `/api/products` endpoint
 
 // get all products
 router.get('/', (req, res) => {
   // find all products
+  Product
+    .findAll({include: [
+      { model: Category }, 
+      { model: Tag , attributes: ['id', 'tag_name']}]})
+    .then((products) => {
+      res.json(products); // Send the formatted products data as a response
+    })
+    .catch((err) => {
+      throw (err)
+    })
   // be sure to include its associated Category and Tag data
 });
 
 // get one product
 router.get('/:id', (req, res) => {
   // find a single product by its `id`
+  Product
+    .findOne({ include: [{ model: Category }, { model: Tag }]}, { where: { id: req.params.id } })
+    .then((data) => {
+      res.json(data)
+    })
+    .catch((err) => {
+      throw err
+    })
   // be sure to include its associated Category and Tag data
 });
 
 // create new product
 router.post('/', (req, res) => {
-  /* req.body should look like this...
-    {
-      product_name: "Basketball",
-      price: 200.00,
-      stock: 3,
-      tagIds: [1, 2, 3, 4]
-    }
-  */
-  Product.create(req.body)
+  let createdProduct;
+
+  Product
+    .bulkCreate([
+      {
+        product_name: req.body.product_name,
+        price: req.body.price,
+        stock: req.body.stock,
+        category_id: req.body.category_id,
+      }
+      
+    ])
     .then((product) => {
-      // if there's product tags, we need to create pairings to bulk create in the ProductTag model
-      if (req.body.tagIds.length) {
-        const productTagIdArr = req.body.tagIds.map((tag_id) => {
+      createdProduct = product[0]; // Assuming bulkCreate returns an array
+      if (req.body.tags_id.length) {
+        const productTagIdArr = req.body.tags_id.map((tags) => {
           return {
-            product_id: product.id,
-            tag_id,
+            product_id: createdProduct.id,
+            tag_id: tags,
           };
         });
         return ProductTag.bulkCreate(productTagIdArr);
       }
-      // if no product tags, just respond
-      res.status(200).json(product);
+      return [];
     })
-    .then((productTagIds) => res.status(200).json(productTagIds))
+    .then((productTagIds) => {
+      const response = {
+        product: createdProduct,
+        productTagIds: productTagIds
+      };
+      res.status(200).json(response);
+    })
     .catch((err) => {
       console.log(err);
       res.status(400).json(err);
     });
 });
+
 
 // update product
 router.put('/:id', (req, res) => {
@@ -94,6 +123,18 @@ router.put('/:id', (req, res) => {
 
 router.delete('/:id', (req, res) => {
   // delete one product by its `id` value
+  Category
+  .destroy({
+    where: {
+      id: req.params.id
+    },
+  })
+  .then((data) => {
+    res.json(data)
+  })
+  .catch((err) => {
+    throw err
+  })
 });
 
 module.exports = router;
