@@ -25,7 +25,7 @@ router.get('/', (req, res) => {
 router.get('/:id', (req, res) => {
   // find a single product by its `id`
   Product
-    .findOne({ include: [{ model: Category }, { model: Tag }]}, { where: { id: req.params.id } })
+    .findOne({ include: [{ model: Category }, { model: Tag }], where: { id: req.params.id } })
     .then((data) => {
       res.json(data)
     })
@@ -123,14 +123,19 @@ router.put('/:id', (req, res) => {
 
 router.delete('/:id', (req, res) => {
   // delete one product by its `id` value
-  Category
+  ProductTag
   .destroy({
     where: {
-      id: req.params.id
-    },
+      product_id: req.params.id
+    }
+  })
+  .then(() => {
+    Product.destroy({
+      where: {id: req.params.id}
+    })
   })
   .then((data) => {
-    res.json(data)
+    res.json(data);
   })
   .catch((err) => {
     throw err
