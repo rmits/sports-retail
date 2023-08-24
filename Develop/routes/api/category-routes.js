@@ -21,14 +21,14 @@ router.get('/', (req, res) => {
 router.get('/:id', (req, res) => {
   // find one category by its `id` value
   Category
-    .findOne({ include: { model: Product }}, { where: { id: req.params.id } })
+    .findOne({ where: { id: req.params.id } , include: { model: Product }})
     .then((data) => {
       res.json(data)
     })
     .catch((err) => {
       throw err
     })
-  // be sure to include its associated Products
+  // be sure to include its associated Product
 });
 
 router.post('/', async (req, res) => {
