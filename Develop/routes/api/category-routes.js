@@ -1,25 +1,27 @@
 const router = require('express').Router();
 const { Category, Product } = require('../../models');
+Category.hasMany(Product, {foreignKey: 'category_id'});
 
 // The `/api/categories` endpoint
 
 router.get('/', (req, res) => {
   // find all categories
   Category
-    .findAll()
+    .findAll({include: [{ model: Product }]})
     .then((data) => {
       res.json(data)
-        .catch((err) => {
-          throw (err)
-        })
     })
-  // be sure to include its associated Products
+    .catch((err) => {
+      throw (err)
+    })
 });
+// be sure to include its associated Products
+
 
 router.get('/:id', (req, res) => {
   // find one category by its `id` value
   Category
-    .findOne({ where: { id: req.params.id } })
+    .findOne({ include: { model: Product }}, { where: { id: req.params.id } })
     .then((data) => {
       res.json(data)
     })
@@ -32,7 +34,7 @@ router.get('/:id', (req, res) => {
 router.post('/', async (req, res) => {
   // create a new category
   Category
-    .create([
+    .bulkCreate([
       {
         category_name: req.body.category_name
       }])
@@ -61,7 +63,7 @@ router.put('/:id', (req, res) => {
     .catch((err) => {
       throw err
     })
-    
+
 });
 
 router.delete('/:id', (req, res) => {
